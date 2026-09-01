@@ -14,7 +14,14 @@ export const bindGalleryInteractions = ({
   let isDragging = false;
   let isClick = true;
   let clickStartTime = 0;
+  let inertiaFrameId = null;
   const previousMouse = { x: 0, y: 0 };
+  const velocity = { x: 0, y: 0 };
+
+  const isDesktop = () => {
+    if (typeof window === 'undefined') return false;
+    return !window.matchMedia('(pointer: coarse)').matches && window.innerWidth > 768;
+  };
 
   const getCurrentConfig = () => getGalleryConfig();
 
@@ -27,9 +34,16 @@ export const bindGalleryInteractions = ({
 
     const currentConfig = getCurrentConfig();
 
+    if (inertiaFrameId) {
+      cancelAnimationFrame(inertiaFrameId);
+      inertiaFrameId = null;
+    }
+
     isDragging = true;
     isClick = true;
     clickStartTime = Date.now();
+    velocity.x = 0;
+    velocity.y = 0;
     document.body.classList.add('dragging');
     previousMouse.x = x;
     previousMouse.y = y;
@@ -52,6 +66,11 @@ export const bindGalleryInteractions = ({
       if (viewportState.targetZoom === 1.0) updateZoom(currentConfig.zoomLevel);
     }
 
+    if (isDesktop()) {
+      velocity.x = -(deltaX * 0.024);
+      velocity.y = deltaY * 0.024;
+    }
+
     targetOffset.x -= deltaX * currentConfig.dragSensitivity;
     targetOffset.y += deltaY * currentConfig.dragSensitivity;
     previousMouse.x = currentX;
@@ -67,6 +86,9 @@ export const bindGalleryInteractions = ({
 
   const onPointerDown = (event) => {
     if (selectedProjectRef.current) return;
+    // Ignore if clicking on filter button, backdrop, or modal
+    const target = event.target;
+    if (target?.closest('.gallery-filter-button, .gallery-filter-backdrop, .gallery-filter-modal')) return;
     startDrag(event.clientX, event.clientY);
   };
 
@@ -77,6 +99,9 @@ export const bindGalleryInteractions = ({
 
   const onTouchStart = (event) => {
     if (selectedProjectRef.current) return;
+    // Ignore if touching on filter button, backdrop, or modal
+    const target = event.target;
+    if (target?.closest('.gallery-filter-button, .gallery-filter-backdrop, .gallery-filter-modal')) return;
     event.preventDefault();
     startDrag(event.touches[0].clientX, event.touches[0].clientY);
   };
@@ -87,12 +112,50 @@ export const bindGalleryInteractions = ({
     handleMove(event.touches[0].clientX, event.touches[0].clientY);
   };
 
+  const applyInertia = () => {
+    if (!isDesktop() || isDragging) return;
+
+    const tick = () => {
+      if (isDragging) return;
+
+      targetOffset.x += velocity.x;
+      targetOffset.y += velocity.y;
+      velocity.x *= 0.72;
+      velocity.y *= 0.72;
+
+      if (Math.abs(velocity.x) < 0.003 && Math.abs(velocity.y) < 0.003) {
+        velocity.x = 0;
+        velocity.y = 0;
+        inertiaFrameId = null;
+        return;
+      }
+
+      inertiaFrameId = requestAnimationFrame(tick);
+    };
+
+    if (inertiaFrameId) cancelAnimationFrame(inertiaFrameId);
+    inertiaFrameId = requestAnimationFrame(tick);
+  };
+
   const onPointerUp = (event) => {
     if (selectedProjectRef.current) return;
+
+    // Ignore clicks on filter button, backdrop, or modal
+    const target = event.target || event.changedTouches?.[0]?.target;
+    if (target?.closest('.gallery-filter-button, .gallery-filter-backdrop, .gallery-filter-modal')) {
+      isDragging = false;
+      document.body.classList.remove('dragging');
+      updateZoom(1.0);
+      return;
+    }
 
     isDragging = false;
     document.body.classList.remove('dragging');
     updateZoom(1.0);
+
+    if (isDesktop() && !isClick) {
+      applyInertia();
+    }
 
     if (isClick && Date.now() - clickStartTime < 200) {
       const endX = event.clientX || event.changedTouches?.[0]?.clientX;

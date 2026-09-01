@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { projects } from '../../data/projects';
 import { getGalleryConfig } from './constants';
 import { rgbaToArray, createTextureAtlas, loadTextures } from './textureLoader';
 
@@ -29,7 +30,7 @@ export const initGalleryScene = async ({ container, vertexShader, fragmentShader
     uMousePos: { value: new THREE.Vector2(-1, -1) },
     uZoom: { value: 1.0 },
     uCellSize: { value: config.cellSize },
-    uTextureCount: { value: 5 },
+    uTextureCount: { value: Math.max(projects.length, 1) },
     uImageAtlas: { value: imageAtlas },
     uTextAtlas: { value: textAtlas },
   };

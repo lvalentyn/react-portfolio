@@ -104,11 +104,11 @@ export const fragmentShader = `
     float textY = 0.68;
     bool inTextArea = cellUV.x >= 0.05 && cellUV.x <= 0.95 && cellUV.y >= textY && cellUV.y <= textY + textHeight;
 
-    float texIndex = mod(cellId.x + cellId.y * 3.0, uTextureCount);
+    float atlasSize = ceil(sqrt(uTextureCount));
+    float texIndex = mod(cellId.x + cellId.y * atlasSize, uTextureCount);
     vec3 color = backgroundColor;
 
     if (inImageArea && imageAlpha > 0.0) {
-      float atlasSize = ceil(sqrt(uTextureCount));
       vec2 atlasPos = vec2(mod(texIndex, atlasSize), floor(texIndex / atlasSize));
       vec2 atlasUV = (atlasPos + imageUV) / atlasSize;
       vec3 imageColor = texture2D(uImageAtlas, atlasUV).rgb;
@@ -123,7 +123,6 @@ export const fragmentShader = `
       if (textCoord.y < 0.0) textCoord.y = 0.0;
       if (textCoord.y > 1.0) textCoord.y = 1.0;
 
-      float atlasSize = ceil(sqrt(uTextureCount));
       vec2 atlasPos = vec2(mod(texIndex, atlasSize), floor(texIndex / atlasSize));
       vec2 atlasUV = (atlasPos + textCoord) / atlasSize;
       vec4 textColor = texture2D(uTextAtlas, atlasUV);

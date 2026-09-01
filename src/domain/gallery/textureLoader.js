@@ -11,7 +11,11 @@ export const rgbaToArray = (rgba) => {
   });
 };
 
-export const createTextTexture = (title, year) => {
+export const createTextTexture = (project) => {
+  const title = project?.title || 'Project';
+  const year = project?.year ?? '';
+  const label = year ? `${title.toUpperCase()} ${year}` : title.toUpperCase();
+
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
@@ -20,14 +24,12 @@ export const createTextTexture = (title, year) => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = 'rgba(0, 0, 0, 0)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.font = '700 44px Arial';
+  ctx.font = '700 40px Arial';
   ctx.fillStyle = 'rgba(255, 255, 255, 1)';
   ctx.textBaseline = 'middle';
   ctx.imageSmoothingEnabled = false;
-  ctx.textAlign = 'left';
-  ctx.fillText(title.toUpperCase(), 30, 385);
-  ctx.textAlign = 'right';
-  ctx.fillText(String(year).toUpperCase(), 482, 385);
+  ctx.textAlign = 'center';
+  ctx.fillText(label, 256, 385);
 
   const texture = new THREE.CanvasTexture(canvas);
   Object.assign(texture, {
@@ -140,7 +142,7 @@ export const loadTextures = async () => {
     });
 
     imageTextures.push(texture);
-    textTextures.push(createTextTexture(project.title, project.year));
+    textTextures.push(createTextTexture(project));
   }
 
   return { imageTextures, textTextures };

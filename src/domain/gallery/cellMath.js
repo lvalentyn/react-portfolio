@@ -2,7 +2,8 @@ import { projects } from '../../data/projects';
 import { getGalleryConfig } from './constants';
 
 export const getProjectByCell = (cellX, cellY) => {
-  const texIndex = Math.floor((cellX + cellY * 3.0) % projects.length);
+  const columns = Math.ceil(Math.sqrt(projects.length));
+  const texIndex = Math.floor((cellX + cellY * columns) % projects.length);
   const actualIndex = texIndex < 0 ? projects.length + texIndex : texIndex;
 
   return projects[actualIndex];
