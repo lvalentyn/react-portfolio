@@ -7,6 +7,7 @@ export const useGallery = ({ projectList = allProjects } = {}) => {
   const galleryRef = useRef(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const selectedProjectRef = useRef(null);
+  const interactionsRef = useRef(null);
 
   const closeModal = () => setSelectedProject(null);
 
@@ -14,8 +15,21 @@ export const useGallery = ({ projectList = allProjects } = {}) => {
     selectedProjectRef.current = selectedProject;
     if (!galleryRef.current) return;
 
-    galleryRef.current.style.pointerEvents = selectedProject ? 'none' : '';
-    document.body.style.overflow = selectedProject ? 'hidden' : '';
+    if (selectedProject) {
+      // When opening modal - reset drag state immediately
+      if (interactionsRef.current) {
+        interactionsRef.current.resetDragState();
+      }
+      galleryRef.current.style.pointerEvents = 'none';
+      document.body.style.overflow = 'hidden';
+    } else {
+      // When closing modal - reset drag state
+      if (interactionsRef.current) {
+        interactionsRef.current.resetDragState();
+      }
+      galleryRef.current.style.pointerEvents = '';
+      document.body.style.overflow = '';
+    }
   }, [selectedProject]);
 
   useEffect(() => {
@@ -36,6 +50,8 @@ export const useGallery = ({ projectList = allProjects } = {}) => {
     let renderer;
     let plane;
     let interactions;
+
+    const closeModal = () => setSelectedProject(null);
 
     const onProjectSelected = ({ tileX, tileY }) => {
       const project = getProjectByCell(projectList, tileX, tileY);
@@ -95,6 +111,7 @@ export const useGallery = ({ projectList = allProjects } = {}) => {
         onProjectSelected,
       });
 
+      interactionsRef.current = interactions;
       interactions.attach();
       window.addEventListener('resize', resizeHandler);
       animate();
@@ -106,14 +123,67 @@ export const useGallery = ({ projectList = allProjects } = {}) => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resizeHandler);
       interactions?.detach();
-      if (renderer && plane) {
-        plane.geometry.dispose();
-        plane.material.dispose();
+
+      // Dispose all textures first
+      if (plane?.material?.uniforms) {
+        const { uImageAtlas, uTextAtlas } = plane.material.uniforms;
+        if (uImageAtlas?.value) {
+          uImageAtlas.value.dispose();
+        }
+        if (uTextAtlas?.value) {
+          uTextAtlas.value.dispose();
+        }
       }
-      renderer?.dispose();
-      if (container.contains(renderer?.domElement)) {
+
+      // Dispose geometry and material
+      if (plane) {
+        if (plane.geometry) {
+          plane.geometry.dispose();
+        }
+        if (plane.material) {
+          plane.material.dispose();
+        }
+      }
+
+      // Remove and dispose scene
+      if (scene) {
+        while (scene.children.length > 0) {
+          const child = scene.children[0];
+          scene.remove(child);
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach((m) => m.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
+        }
+      }
+
+      // Dispose renderer and force context loss
+      if (renderer) {
+        try {
+          const gl = renderer.getContext();
+          if (gl) {
+            const ext = gl.getExtension('WEBGL_lose_context');
+            if (ext) {
+              ext.loseContext();
+            }
+          }
+        } catch (e) {
+          // Context might already be lost
+        }
+        renderer.dispose();
+      }
+
+      // Remove canvas from DOM
+      if (container && renderer?.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
+
+      // Clear interactions ref
+      interactionsRef.current = null;
     };
   }, [projectList]);
 

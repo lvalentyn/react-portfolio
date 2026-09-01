@@ -91,7 +91,7 @@ export const Gallery = () => {
             aria-label="Project filter"
           >
             <div className="gallery-filter-header">
-              <h3>Filter</h3>
+              <h3>Filter ({displayProjects.length})</h3>
               <button type="button" className="gallery-filter-close" onClick={() => setIsFilterOpen(false)}>
                 ×
               </button>

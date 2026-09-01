@@ -200,6 +200,17 @@ export const bindGalleryInteractions = ({
     });
   };
 
+  const resetDragState = () => {
+    isDragging = false;
+    isClick = true;
+    document.body.classList.remove('dragging');
+    if (inertiaFrameId) {
+      cancelAnimationFrame(inertiaFrameId);
+      inertiaFrameId = null;
+    }
+    updateZoom(1.0);
+  };
+
   const detach = () => {
     document.removeEventListener('mousedown', onPointerDown);
     document.removeEventListener('mousemove', onPointerMove);
@@ -212,5 +223,5 @@ export const bindGalleryInteractions = ({
     renderer.domElement.removeEventListener('mousemove', updateMousePosition);
   };
 
-  return { attach, detach };
+  return { attach, detach, resetDragState };
 };
