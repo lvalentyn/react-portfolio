@@ -88,11 +88,11 @@ export const createTextureAtlas = (textures, isText = false) => {
   return atlasTexture;
 };
 
-export const loadTextures = async () => {
+export const loadTextures = async (projectList = projects) => {
   const imageTextures = [];
   const textTextures = [];
 
-  for (const project of projects) {
+  for (const project of projectList) {
     const texture = await new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';

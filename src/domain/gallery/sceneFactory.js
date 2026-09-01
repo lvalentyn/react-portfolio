@@ -3,7 +3,7 @@ import { projects } from '../../data/projects';
 import { getGalleryConfig } from './constants';
 import { rgbaToArray, createTextureAtlas, loadTextures } from './textureLoader';
 
-export const initGalleryScene = async ({ container, vertexShader, fragmentShader }) => {
+export const initGalleryScene = async ({ container, vertexShader, fragmentShader, projectList = projects }) => {
   const config = getGalleryConfig();
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
@@ -17,7 +17,7 @@ export const initGalleryScene = async ({ container, vertexShader, fragmentShader
   renderer.setClearColor(new THREE.Color(bgColor[0], bgColor[1], bgColor[2]), bgColor[3]);
   container.appendChild(renderer.domElement);
 
-  const { imageTextures, textTextures } = await loadTextures();
+  const { imageTextures, textTextures } = await loadTextures(projectList);
   const imageAtlas = createTextureAtlas(imageTextures, false);
   const textAtlas = createTextureAtlas(textTextures, true);
 
@@ -30,7 +30,7 @@ export const initGalleryScene = async ({ container, vertexShader, fragmentShader
     uMousePos: { value: new THREE.Vector2(-1, -1) },
     uZoom: { value: 1.0 },
     uCellSize: { value: config.cellSize },
-    uTextureCount: { value: Math.max(projects.length, 1) },
+    uTextureCount: { value: Math.max(projectList.length, 1) },
     uImageAtlas: { value: imageAtlas },
     uTextAtlas: { value: textAtlas },
   };

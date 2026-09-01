@@ -1,13 +1,44 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { projects } from '../../data/projects';
 import { useGallery } from './useGallery';
 import ProjectModal from '../ProjectModal/ProjectModal';
 import './Gallery.scss';
 
 export const Gallery = () => {
-  const { galleryRef, selectedProject, closeModal } = useGallery();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedTechs, setSelectedTechs] = useState([]);
+  const [selectedTechs, setSelectedTechs] = useState(new Set());
+  const [lastNonEmptyProjects, setLastNonEmptyProjects] = useState(projects);
+
+  const filteredProjects = useMemo(() => {
+    if (selectedTechs.size === 0) return projects;
+
+    return [...projects]
+      .filter((project) => (project.tech || []).some((tech) => selectedTechs.has(tech)))
+      .sort((projectA, projectB) => {
+        const scoreA = (projectA.tech || []).reduce(
+          (total, tech) => total + (selectedTechs.has(tech) ? 1 : 0),
+          0
+        );
+        const scoreB = (projectB.tech || []).reduce(
+          (total, tech) => total + (selectedTechs.has(tech) ? 1 : 0),
+          0
+        );
+        return scoreB - scoreA;
+      });
+  }, [selectedTechs]);
+
+  const displayProjects = filteredProjects.length > 0 ? filteredProjects : lastNonEmptyProjects;
+
+  useEffect(() => {
+    if (filteredProjects.length > 0) {
+      setLastNonEmptyProjects(filteredProjects);
+    }
+  }, [filteredProjects]);
+
+
+  const galleryKey = selectedTechs.size ? `filtered-${selectedTechs.size}` : 'all-projects';
+
+  const { galleryRef, selectedProject, closeModal } = useGallery({ projectList: displayProjects });
 
   const availableTechs = useMemo(
     () => [...new Set(projects.flatMap((project) => project.tech || []))],
@@ -15,14 +46,25 @@ export const Gallery = () => {
   );
 
   const toggleTech = (tech) => {
-    setSelectedTechs((prev) =>
-      prev.includes(tech) ? prev.filter((item) => item !== tech) : [...prev, tech]
-    );
+    setSelectedTechs((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(tech)) {
+        updated.delete(tech);
+      } else {
+        updated.add(tech);
+      }
+      return updated;
+    });
+  };
+
+  const clearFilters = () => {
+    setSelectedTechs(new Set());
+    setIsFilterOpen(false);
   };
 
   return (
     <>
-      <section id="gallery" ref={galleryRef}>
+      <section id="gallery" ref={galleryRef} key={galleryKey} className="gallery-scene">
         <div className="vignette-overlay" />
       </section>
 
@@ -60,13 +102,19 @@ export const Gallery = () => {
                 <label key={tech} className="gallery-filter-item">
                   <input
                     type="checkbox"
-                    checked={selectedTechs.includes(tech)}
+                    checked={selectedTechs.has(tech)}
                     onChange={() => toggleTech(tech)}
                   />
                   <span>{tech}</span>
                 </label>
               ))}
             </div>
+
+            {selectedTechs.size > 0 && (
+              <button type="button" className="gallery-filter-clear" onClick={clearFilters}>
+                Clear filters
+              </button>
+            )}
           </div>
         </div>
       )}

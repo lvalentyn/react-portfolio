@@ -25,6 +25,11 @@ export const bindGalleryInteractions = ({
 
   const getCurrentConfig = () => getGalleryConfig();
 
+  const getFilterTarget = (event) => {
+    const target = event?.target ?? event?.changedTouches?.[0]?.target;
+    return target && typeof target.closest === 'function' ? target : null;
+  };
+
   const updateZoom = (value) => {
     viewportState.targetZoom = value;
   };
@@ -87,7 +92,7 @@ export const bindGalleryInteractions = ({
   const onPointerDown = (event) => {
     if (selectedProjectRef.current) return;
     // Ignore if clicking on filter button, backdrop, or modal
-    const target = event.target;
+    const target = getFilterTarget(event);
     if (target?.closest('.gallery-filter-button, .gallery-filter-backdrop, .gallery-filter-modal')) return;
     startDrag(event.clientX, event.clientY);
   };
@@ -100,7 +105,7 @@ export const bindGalleryInteractions = ({
   const onTouchStart = (event) => {
     if (selectedProjectRef.current) return;
     // Ignore if touching on filter button, backdrop, or modal
-    const target = event.target;
+    const target = getFilterTarget(event);
     if (target?.closest('.gallery-filter-button, .gallery-filter-backdrop, .gallery-filter-modal')) return;
     event.preventDefault();
     startDrag(event.touches[0].clientX, event.touches[0].clientY);
@@ -141,7 +146,7 @@ export const bindGalleryInteractions = ({
     if (selectedProjectRef.current) return;
 
     // Ignore clicks on filter button, backdrop, or modal
-    const target = event.target || event.changedTouches?.[0]?.target;
+    const target = getFilterTarget(event);
     if (target?.closest('.gallery-filter-button, .gallery-filter-backdrop, .gallery-filter-modal')) {
       isDragging = false;
       document.body.classList.remove('dragging');

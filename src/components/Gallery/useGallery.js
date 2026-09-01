@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { projects as allProjects } from '../../data/projects';
 import { config, vertexShader, fragmentShader } from '../../domain/gallery';
 import { initGalleryScene, getProjectByCell, getTargetOffsetForCell, bindGalleryInteractions, getCellFromPointer } from '../../domain/gallery';
 
-export const useGallery = () => {
+export const useGallery = ({ projectList = allProjects } = {}) => {
   const galleryRef = useRef(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const selectedProjectRef = useRef(null);
@@ -34,9 +35,10 @@ export const useGallery = () => {
     let camera;
     let renderer;
     let plane;
+    let interactions;
 
     const onProjectSelected = ({ tileX, tileY }) => {
-      const project = getProjectByCell(tileX, tileY);
+      const project = getProjectByCell(projectList, tileX, tileY);
       if (!project) return;
 
       const nextTarget = getTargetOffsetForCell(tileX, tileY);
@@ -57,7 +59,9 @@ export const useGallery = () => {
         plane.material.uniforms.uZoom.value = viewportState.zoomLevel;
       }
 
-      renderer.render(scene, camera);
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
     };
 
     const resizeHandler = () => {
@@ -74,11 +78,12 @@ export const useGallery = () => {
         container,
         vertexShader,
         fragmentShader,
+        projectList,
       });
 
       ({ scene, camera, renderer, plane } = setup);
 
-      const interactions = bindGalleryInteractions({
+      interactions = bindGalleryInteractions({
         renderer,
         plane,
         selectedProjectRef,
@@ -100,6 +105,7 @@ export const useGallery = () => {
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resizeHandler);
+      interactions?.detach();
       if (renderer && plane) {
         plane.geometry.dispose();
         plane.material.dispose();
@@ -109,7 +115,7 @@ export const useGallery = () => {
         container.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [projectList]);
 
   return {
     galleryRef,

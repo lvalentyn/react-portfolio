@@ -1,12 +1,14 @@
 import { projects } from '../../data/projects';
 import { getGalleryConfig } from './constants';
 
-export const getProjectByCell = (cellX, cellY) => {
-  const columns = Math.ceil(Math.sqrt(projects.length));
-  const texIndex = Math.floor((cellX + cellY * columns) % projects.length);
-  const actualIndex = texIndex < 0 ? projects.length + texIndex : texIndex;
+export const getProjectByCell = (projectList = projects, cellX, cellY) => {
+  if (!projectList || !projectList.length) return null;
 
-  return projects[actualIndex];
+  const columns = Math.ceil(Math.sqrt(projectList.length));
+  const texIndex = Math.floor((cellX + cellY * columns) % projectList.length);
+  const actualIndex = texIndex < 0 ? projectList.length + texIndex : texIndex;
+
+  return projectList[actualIndex];
 };
 
 export const getTargetOffsetForCell = (cellX, cellY) => {
